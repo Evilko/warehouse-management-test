@@ -19,4 +19,5 @@ urlpatterns = [path('', views.index, name='index'),
                     name='shipment_confirmation'),
                path('shipment_success', views.shipment_success,
                     name='shipment_success'),
+               path('mptt', views.MpttView.as_view(), name='mptt'),
                ]

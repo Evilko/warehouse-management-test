@@ -19,6 +19,11 @@ from .forms import StockForm, OrderFormsetsForm, CustomerForm
 from .models import Cargo, Shipment, ShipmentStock
 from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderCustomerSelectForm
 
+class MpttView(View):
+    def get(self, request):
+        context = {}
+        return render(request, 'warehouse/mptt.html', context)
+
 
 def index(request):
     return render(request, 'warehouse/index.html')
