@@ -1,4 +1,5 @@
 from django import forms
+from mptt.forms import TreeNodeChoiceField
 
 from django.utils.translation import gettext as _
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -55,6 +56,8 @@ class OrderItemForm(forms.Form):
     count = forms.DecimalField(required=True, initial=1, min_value=1)
 
 
+class MPTTForm(forms.Form):
+    pass
 
 
 class CargoNewForm(forms.ModelForm):

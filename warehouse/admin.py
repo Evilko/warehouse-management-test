@@ -2,13 +2,15 @@ import qrcode
 import io
 import uuid
 
+from mptt.admin import MPTTModelAdmin
+
 from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.core.mail import EmailMessage
 from email.mime.base import MIMEBase
 from email.encoders import encode_base64
-from .models import Cargo, CargoStock
+from .models import Cargo, CargoStock, CategoryMPTT
 
 from .forms import CustomerForm, SupplierForm, CategoryForm
 from .forms import ShipmentForm, CargoForm, StockFormM2M
@@ -251,3 +253,4 @@ admin.site.register(Category, CategoryAdmin)
 #admin.site.register(CargoDetails)
 admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Cargo, CargoAdmin)
+admin.site.register(CategoryMPTT, MPTTModelAdmin)

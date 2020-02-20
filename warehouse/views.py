@@ -16,12 +16,13 @@ from .models import Customer, Stock, CargoStock
 from .models import Cargo, Shipment, ShipmentStock, CargoDetails
 from .forms import CargoNewForm, CargoFillForm
 from .forms import StockForm, OrderFormsetsForm, CustomerForm
-from .models import Cargo, Shipment, ShipmentStock
+from .models import Cargo, Shipment, ShipmentStock, CategoryMPTT
 from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderCustomerSelectForm
+
 
 class MpttView(View):
     def get(self, request):
-        context = {}
+        context = {'categories': CategoryMPTT.objects.all()}
         return render(request, 'warehouse/mptt.html', context)
 
 
