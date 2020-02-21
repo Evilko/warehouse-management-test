@@ -9,9 +9,13 @@ from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
 
-from django.views.generic.edit import FormView
 from django.views.decorators.cache import never_cache
 
+from .models import Stock, CargoStock
+from .models import CargoDetails, ShipmentStock
+from .models import Cargo, Shipment
+from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm
+from .forms import CargoNewForm, CargoFillForm, StockForm, ShipmentConfirmationForm
 from .models import Customer, Stock, CargoStock
 from .models import Cargo, Shipment, ShipmentStock, CargoDetails
 from .forms import CargoNewForm, CargoFillForm
@@ -30,6 +34,8 @@ def index(request):
     return render(request, 'warehouse/index.html')
 
 
+# не кэшируем страницу для нормальной работы jQuery кода
+# по добавлению formsets
 @method_decorator(never_cache, name='dispatch')
 class CargoFormsetsView(View):
     """
@@ -72,48 +78,10 @@ class CargoFormsetsView(View):
 
 
 @method_decorator(never_cache, name='dispatch')
-class OrderFormsetsView(View):
-    """
-    Class-based view для обработки страницы
-    покупки с добавлением нескольких товаров
-    в одной форме
-    """
-    stock_formset = forms.formset_factory(form=StockForm,
-                                          max_num=50,
-                                          min_num=1,
-                                          extra=0)
-    template = 'warehouse/order_formsets.html'
-
-    def post(self, request):
-        form = OrderFormsetsForm(request.POST)
-        formset = self.stock_formset(request.POST)
-        context = {'form': form, 'formset': formset}
-        if form.is_valid() and formset.is_valid() and formset.cleaned_data:
-            instance = form.save()
-            stocks = {}
-            for stock in formset.cleaned_data:
-                name = stock['name']
-                stocks[name] = stocks.get(name, 0) + stock['number']
-            for name, number in stocks.items():
-                stock = Stock.objects.get(name=name)
-                ShipmentStock.objects.create(shipment=instance,
-                                             stock=stock, number=number)
-            messages.info(request, _('Заявка отправлена'))
-            return redirect(to='warehouse:index')
-        else:
-            if not formset.cleaned_data:
-                context['formset'] = self.stock_formset()
-            return render(request, self.template, context)
-
-    def get(self, request):
-        form = OrderFormsetsForm()
-        formset = self.stock_formset()
-        context = {'form': form, 'formset': formset}
-        return render(request, self.template, context=context)
-
-
-@method_decorator(never_cache, name='dispatch')
 class OrderView(View):
+    """
+    Class-based view для обработки страницы покупки
+    """
     OrderItemFormSet = formset_factory(OrderItemForm, min_num=1, extra=0)
 
     def post(self, request):
@@ -144,9 +112,9 @@ class OrderView(View):
         return redirect('warehouse:order_successful')
 
     def get(self, request):
-        customer_form = CustomerForm
-        item_formset = self.OrderItemFormSet
-        customer_selectform = OrderCustomerSelectForm
+        customer_form = CustomerForm()
+        item_formset = self.OrderItemFormSet()
+        customer_selectform = OrderCustomerSelectForm()
         context = {
             'customer_form': customer_form,
             'item_formset': item_formset,
@@ -223,7 +191,7 @@ class ShipmentConfirmation(TemplateView):
         return render(request, template_name=self.template_name)
 
     def post(self, request):
-        form = self.ShipmentConfirmationForm(request.POST)
+        form = ShipmentConfirmationForm(request.POST)
         if form.is_valid():
             key = form.cleaned_data['shipment_key'].strip()
             if key and Shipment.objects.filter(qr=key).exists():
@@ -245,9 +213,3 @@ class ShipmentConfirmation(TemplateView):
                                body=body,
                                to=[settings.ADMINS[0][1], ])
         message.send()
-
-    class ShipmentConfirmationForm(forms.Form):
-        """
-        Форма с полем ввода ключа для подтверждения получения покупки
-        """
-        shipment_key = forms.CharField(required=True)
