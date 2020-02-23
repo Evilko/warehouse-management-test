@@ -1,6 +1,8 @@
 from django.urls import path
 
 from . import views
+from .models import StockMPTT
+from .views import HybridDetailView
 
 app_name = 'warehouse'
 
@@ -19,4 +21,5 @@ urlpatterns = [path('', views.index, name='index'),
                path('shipment_success', views.shipment_success,
                     name='shipment_success'),
                path('mptt', views.MpttView.as_view(), name='mptt'),
+               path('mptt/<int:pk>', HybridDetailView.as_view(model=StockMPTT)),
                ]

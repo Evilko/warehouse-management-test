@@ -1,28 +1,59 @@
 {% extends 'warehouse/base.html' %}
 {% load i18n %}
-{% load admin_urls %}
+{% load static %}
     {% block title %}
         {% trans "Категории MPTT" %}
     {% endblock %}
-    {% block head %}
-
+    {% block header-name %}
+        {% trans "Категории MPTT" %}
     {% endblock %}
 
 
 {% block content %}
+<div class="colM">
+    <form method="POST">
+        {% csrf_token %}
 
-{% load mptt_tags %}
-<ul>
-    {% recursetree categories %}
-        <li>
-            {{ node.name }}
-            {% if not node.is_leaf_node %}
-                <ul class="children">
-                    {{ children }}
+        {% load mptt_tags %}
+        <fieldset class="module aligned">
+            <h2>{% trans "Древо" %}</h2>
+            <div class="form-row full-cat">
+                <ul>
+                    {% recursetree categories %}
+                        <li>
+                            {{ node.name }}
+                            {% if not node.is_leaf_node %}
+                                <ul class="children">
+                                    {{ children }}
+                                </ul>
+                            {% endif %}
+                        </li>
+                    {% endrecursetree %}
                 </ul>
-            {% endif %}
-        </li>
-    {% endrecursetree %}
-</ul>
+            </div>
+        </fieldset>
 
+        <fieldset class="module aligned">
+            <h2> {% trans "Выберите категорию" %}</h2>
+                <div class="form-row sel-cat">
+                    {{ form }}
+                </div>
+        </fieldset>
+        <fieldset class="module aligned">
+            <h2> {% trans "Выберите товары" %}</h2>
+                <div class="form-row sel-stock">
+                    {{ stock }}
+                </div>
+        </fieldset>
+         <div class="submit-row">
+            <p class="deletelink-box">
+                <input type="submit" class="default" value="{% trans 'Отправить заявку на покупку' %}">
+            </p>
+         </div>
+    </form>
+</div>
+
+<script src="{% static 'warehouse/js/jquery-1.3.2.min.js' %}"></script>
+<script src="{% static 'warehouse/js/jquery.formset.js' %}"></script>
+<script src="{% static 'warehouse/js/mptt.js' %}"></script>
 {% endblock content %}

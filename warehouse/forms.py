@@ -4,7 +4,7 @@ from mptt.forms import TreeNodeChoiceField
 from django.utils.translation import gettext as _
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import Supplier, Customer, Category
+from .models import Supplier, Customer, Category, CategoryMPTT, StockMPTT
 from .models import Shipment, Cargo, CargoStock, Stock
 from .models import format_date, get_parent_categories
 from .models import get_shipment_total, get_cargo_total
@@ -59,8 +59,13 @@ class OrderItemForm(forms.Form):
     count = forms.DecimalField(required=True, initial=1, min_value=1)
 
 
-class MPTTForm(forms.Form):
-    pass
+class CategoryMPTTForm(forms.Form):
+    category = TreeNodeChoiceField(queryset=CategoryMPTT.objects.all(),
+                                   level_indicator=u'+--')
+
+
+class StockMPTTForm(forms.Form):
+    item = forms.ModelChoiceField(queryset=StockMPTT.objects.all())
 
 
 class CargoNewForm(forms.ModelForm):

@@ -8,25 +8,62 @@ from django.views.generic import View, TemplateView
 from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
-
 from django.views.decorators.cache import never_cache
+from django.http import HttpResponse
+from django.views.generic.detail import BaseDetailView, SingleObjectTemplateResponseMixin
+
+import json
 
 from .models import Stock, CargoStock
 from .models import CargoDetails, ShipmentStock
 from .models import Cargo, Shipment
-from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm
+from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm, CategoryMPTTForm, StockMPTTForm
 from .forms import CargoNewForm, CargoFillForm, StockForm, ShipmentConfirmationForm
 from .models import Customer, Stock, CargoStock
 from .models import Cargo, Shipment, ShipmentStock, CargoDetails
 from .forms import CargoNewForm, CargoFillForm
-from .forms import StockForm, OrderFormsetsForm, CustomerForm
+from .forms import StockForm, CustomerForm
 from .models import Cargo, Shipment, ShipmentStock, CategoryMPTT
 from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderCustomerSelectForm
 
 
+class JSONResponseMixin(object):
+    def render_to_response(self, context):
+        return self.get_json_response(self.convert_context_to_json(context))
+    def get_json_response(self, content, **httpresponse_kwargs):
+        return HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
+    def convert_context_to_json(self, context):
+        return json.dumps(context)
+
+class HybridDetailView(JSONResponseMixin, SingleObjectTemplateResponseMixin, BaseDetailView):
+    def render_to_response(self, context):
+        if self.request.is_ajax():
+            obj = context['object'].as_dict()
+            print(obj)
+            return JSONResponseMixin.render_to_response(self, obj)
+        else:
+            return SingleObjectTemplateResponseMixin.render_to_response(self, context)
+
+
 class MpttView(View):
     def get(self, request):
-        context = {'categories': CategoryMPTT.objects.all()}
+        form = CategoryMPTTForm()
+        stock = StockMPTTForm()
+        context = {'categories': CategoryMPTT.objects.all(),
+                   'form': form,
+                   'stock': stock}
+        return render(request, 'warehouse/mptt.html', context)
+
+    def post(self, request):
+        form = CategoryMPTTForm(request.POST)
+        stock = StockMPTTForm(request.POST)
+
+        if form.is_valid():
+            print(form.cleaned_data)
+
+        context = {'categories': CategoryMPTT.objects.all(),
+                   'form': form,
+                   'stock': stock}
         return render(request, 'warehouse/mptt.html', context)
 
 

@@ -54,10 +54,11 @@ class Category(models.Model):
     """
     Таблица категорий товаров
     """
+
     class Meta:
         verbose_name = _('Категория')
         verbose_name_plural = _('Категории')
-        unique_together = (('name', 'parent_id'), )
+        unique_together = (('name', 'parent_id'),)
 
     name = models.CharField(max_length=80,
                             blank=False, verbose_name=_('Категория'))
@@ -68,21 +69,11 @@ class Category(models.Model):
         return self.name
 
 
-class CategoryMPTT(MPTTModel):
-    name = models.CharField(max_length=50, unique=True)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
-
-    class MPTTMeta:
-        order_insertion_by = ['name']
-
-    def __str__(self):
-        return self.name
-
-
 class Supplier(models.Model):
     """
     Таблица поставщиков
     """
+
     class Meta:
         verbose_name = _('Поставщик')
         verbose_name_plural = _('Поставщики')
@@ -105,6 +96,7 @@ class Customer(models.Model):
     """
     Таблица покупателей
     """
+
     class Meta:
         verbose_name = _('Покупатель')
         verbose_name_plural = _('Покупатели')
@@ -123,6 +115,7 @@ class Stock(models.Model):
     """
     Таблица товаров (склад)
     """
+
     class Meta:
         verbose_name = _('Товар')
         verbose_name_plural = _('Товары')
@@ -144,6 +137,7 @@ class Shipment(models.Model):
     """
     Таблица покупок
     """
+
     class Meta:
         verbose_name = _('Покупка')
         verbose_name_plural = _('Покупки')
@@ -174,6 +168,7 @@ class Cargo(models.Model):
     """
     Таблица поставок
     """
+
     class Meta:
         verbose_name = _('Поставка')
         verbose_name_plural = _('Поставки')
@@ -213,6 +208,7 @@ class ShipmentStock(models.Model):
     """
     Таблица многие-ко-многим покупка-товар
     """
+
     class Meta:
         unique_together = (("shipment", "stock"),)
         verbose_name = _('Покупка')
@@ -232,6 +228,7 @@ class CargoStock(models.Model):
     """
     Таблица многие-ко-многим поставка-товар
     """
+
     class Meta:
         unique_together = (("cargo", "stock"),)
         verbose_name = _('Поставка')
@@ -249,8 +246,9 @@ class SupplierCategory(models.Model):
     """
     Таблица многие-ко-многим поставщик-категория
     """
+
     class Meta:
-        unique_together = (('supplier', 'category'), )
+        unique_together = (('supplier', 'category'),)
         verbose_name = _('Категория поставщиков')
         verbose_name_plural = _('Категории поставщиков')
 
@@ -267,6 +265,7 @@ class ModelChangeLogsModel(models.Model):
     class Meta:
         verbose_name = _('Операция')
         verbose_name_plural = _('История операций')
+
     table_name = models.CharField(max_length=132, null=False, blank=True,
                                   verbose_name=_('Тип объекта'))
     data = models.TextField(null=False, blank=True,
@@ -275,3 +274,39 @@ class ModelChangeLogsModel(models.Model):
                               verbose_name=_('Действие'))
     date = models.DateTimeField(auto_now_add=True,
                                 verbose_name='Дата')
+
+
+class CategoryMPTT(MPTTModel):
+    name = models.CharField(max_length=50, unique=True)
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+
+    class MPTTMeta:
+        order_insertion_by = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class StockMPTT(models.Model):
+    """
+    Таблица товаров (склад)
+    """
+
+    class Meta:
+        verbose_name = _('Товар MPTT')
+        verbose_name_plural = _('Товары MPTT')
+
+    article = models.IntegerField(primary_key=True,
+                                  verbose_name=_('Артикул'))
+    name = models.CharField(max_length=80,
+                            verbose_name=_('Наименование'))
+    price = models.FloatField(verbose_name=_('Цена'))
+    number = models.IntegerField(verbose_name=_('Количество на складе'))
+    category = TreeForeignKey(CategoryMPTT, on_delete=models.CASCADE,
+                              verbose_name=_('Категория'))
+
+    def __str__(self):
+        return self.name
+
+    def as_dict(self):
+        return {'name': self.name, 'category': self.category.name}

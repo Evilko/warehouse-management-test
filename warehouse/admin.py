@@ -18,7 +18,7 @@ from .forms import CustomerForm, SupplierForm
 from .forms import StockPriceFilterForm, CategoryForm
 from .forms import ShipmentForm, CargoForm, StockFormM2M
 
-from .models import get_shipment_total
+from .models import get_shipment_total, StockMPTT
 from .models import Cargo, CargoStock
 from .models import Cargo, CargoStock, CategoryMPTT
 
@@ -470,11 +470,18 @@ class ShipmentAdmin(admin.ModelAdmin):
         message.send()
 
 
-admin.site.register(Supplier, SupplierAdmin)
-admin.site.register(Customer, CustomerAdmin)
-admin.site.register(Stock, StockAdmin)
-admin.site.register(Category, CategoryAdmin)
-#admin.site.register(CargoDetails)
-admin.site.register(Shipment, ShipmentAdmin)
-admin.site.register(Cargo, CargoAdmin)
 admin.site.register(CategoryMPTT, MPTTModelAdmin)
+
+@admin.register(StockMPTT)
+class StockMPTTAdmin(admin.ModelAdmin):
+    """
+    Отображение списка и формы товаров
+    """
+    list_display = ('article', 'name', 'price', 'number', 'category', )
+    list_display_links = ('name', )
+    # list_filter = (StockPriceFilter, StockCategoryFilter, StockEmptyFilter)
+    search_fields = ('article', 'name', )
+    ordering = ('category', 'name', )
+    list_per_page = 25
+    verbose_name = _('Товар')
+    verbose_name_plural = _('Товары')

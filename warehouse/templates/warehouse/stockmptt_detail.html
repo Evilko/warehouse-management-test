@@ -1,0 +1,21 @@
+<html>
+<head>
+<title>jQuery test page</title>
+    {% load static %}
+<script src="{% static 'warehouse/js/jquery-3.4.1.min.js' %}"></script>
+<script type="text/javascript">
+function send_request(){
+  $.get(location.href, function(data){
+    $("#id_name").html(data.name);
+    $("#id_category").html(data.category);
+  });
+}
+</script>
+</head>
+<body>
+Object in template called without AJAX: {{object}}<hr/>
+<input type="button" onclick="send_request();" value="Request this page with AJAX" /><br/>
+<b>Name via AJAX:</b><span id="id_name"></span><br/>
+<b>Category via AJAX:</b><span id="id_category"></span><br/>
+</body>
+</html>
