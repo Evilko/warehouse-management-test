@@ -29,19 +29,23 @@ from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderC
 
 class JSONResponseMixin(object):
     def render_to_response(self, context):
+        print('get_json_response')
         return self.get_json_response(self.convert_context_to_json(context))
     def get_json_response(self, content, **httpresponse_kwargs):
+        print('HttpResponse')
         return HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
     def convert_context_to_json(self, context):
+        print('json.dumps(context)')
         return json.dumps(context)
 
 class HybridDetailView(JSONResponseMixin, SingleObjectTemplateResponseMixin, BaseDetailView):
     def render_to_response(self, context):
         if self.request.is_ajax():
             obj = context['object'].as_dict()
-            print(obj)
+            print('render_to_response if self.request.is_ajax():')
             return JSONResponseMixin.render_to_response(self, obj)
         else:
+            print('render_to_response if else')
             return SingleObjectTemplateResponseMixin.render_to_response(self, context)
 
 
