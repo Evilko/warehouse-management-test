@@ -14,7 +14,7 @@ from django.views.generic.detail import BaseDetailView, SingleObjectTemplateResp
 
 import json
 
-from .models import Stock, CargoStock
+from .models import Stock, CargoStock, StockMPTT
 from .models import CargoDetails, ShipmentStock
 from .models import Cargo, Shipment
 from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm, CategoryMPTTForm, StockMPTTForm
@@ -30,33 +30,51 @@ from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderC
 class JSONResponseMixin(object):
     def render_to_response(self, context):
         print('get_json_response')
-        return self.get_json_response(self.convert_context_to_json(context))
+        obj = self.get_json_response(self.convert_context_to_json(context))
+        print(obj)
+        return obj
     def get_json_response(self, content, **httpresponse_kwargs):
         print('HttpResponse')
-        return HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
+        obj = HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
+        print(obj)
+        return obj
     def convert_context_to_json(self, context):
         print('json.dumps(context)')
-        return json.dumps(context)
+        obj = json.dumps(context)
+        print(obj)
+        return obj
 
 class HybridDetailView(JSONResponseMixin, SingleObjectTemplateResponseMixin, BaseDetailView):
     def render_to_response(self, context):
         if self.request.is_ajax():
             obj = context['object'].as_dict()
             print('render_to_response if self.request.is_ajax():')
+            print(self.request.is_ajax())
+            print(obj)
             return JSONResponseMixin.render_to_response(self, obj)
         else:
             print('render_to_response if else')
+            print(context)
             return SingleObjectTemplateResponseMixin.render_to_response(self, context)
 
 
 class MpttView(View):
     def get(self, request):
-        form = CategoryMPTTForm()
-        stock = StockMPTTForm()
-        context = {'categories': CategoryMPTT.objects.all(),
-                   'form': form,
-                   'stock': stock}
-        return render(request, 'warehouse/mptt.html', context)
+        if self.request.is_ajax():
+            cat = request.GET['category']
+            if cat:
+                category = CategoryMPTT.objects.get(pk=cat).get_descendants(include_self=True)
+                stock = StockMPTT.objects.filter(category__in=category)
+                stock_dict = {k: v for k, v in stock.values_list('pk', 'name')}
+                content = json.dumps(stock_dict)
+            return HttpResponse(content, content_type='application/json')
+        else:
+            form = CategoryMPTTForm()
+            stock = StockMPTTForm()
+            context = {'categories': CategoryMPTT.objects.all(),
+                       'form': form,
+                       'stock': stock}
+            return render(request, 'warehouse/mptt.html', context)
 
     def post(self, request):
         form = CategoryMPTTForm(request.POST)
