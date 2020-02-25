@@ -277,8 +277,9 @@ class ModelChangeLogsModel(models.Model):
 
 
 class CategoryMPTT(MPTTModel):
-    name = models.CharField(max_length=50, unique=True)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    name = models.CharField(max_length=50, unique=True, verbose_name=_('категория'))
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children',
+                            verbose_name=_('родитель'))
 
     class MPTTMeta:
         order_insertion_by = ['name']

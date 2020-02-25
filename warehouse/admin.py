@@ -28,22 +28,29 @@ from .forms import ShipmentForm, CargoForm, StockFormM2M
 from .models import Supplier, Customer, Stock, Category
 from .models import Shipment, ShipmentStock, ModelChangeLogsModel
 
+
 # функция gettext с псевдонимом _ применяется к строками
 # для последующего перевода
 
 
 def subtotal_value(obj_id):
-    results = Category.objects.filter(parent_id=obj_id).values('id')
-    total = 0
-    if results:
-        for result in results:
-            total += subtotal_value(result['id'])
-    else:
-        results = Stock.objects.filter(category__id=obj_id).values('price',
-                                                                   'number')
-        for result in results:
-            total += result['price'] * result['number']
-    return total
+    # results = Category.objects.filter(parent_id=obj_id).values('id')
+    # total = 0
+    # if results:
+    #     for result in results:
+    #         total += subtotal_value(result['id'])
+    # else:
+    #     results = Stock.objects.filter(category__id=obj_id).values('price',
+    #                                                                'number')
+    #     for result in results:
+    #         total += result['price'] * result['number']
+    # return total
+    # obj = CategoryMPTT.objects.get(pk=obj_id).get_descendants(include_self=True)
+    values = StockMPTT.objects.filter(category__in=obj_id.get_descendants(include_self=True)).values_list('price', 'number')
+    result = 0
+    for price, count in values:
+        result += price * count
+    return result
 
 
 class StockPriceFilter(ListFilter):
@@ -183,11 +190,11 @@ class StockAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы товаров
     """
-    list_display = ('article', 'name', 'price', 'number', 'category', )
-    list_display_links = ('name', )
+    list_display = ('article', 'name', 'price', 'number', 'category',)
+    list_display_links = ('name',)
     list_filter = (StockPriceFilter, StockCategoryFilter, StockEmptyFilter)
-    search_fields = ('article', 'name', )
-    ordering = ('category', 'name', )
+    search_fields = ('article', 'name',)
+    ordering = ('category', 'name',)
     list_per_page = 25
     verbose_name = _('Товар')
     verbose_name_plural = _('Товары')
@@ -200,9 +207,9 @@ class CategoryAdmin(admin.ModelAdmin):
     """
     form = CategoryForm
     list_display = ('id', 'name', 'upper_categories', 'lower_categories',
-                    'parent_id', 'num_of_subcategory', 'total_value', )
-    ordering = ('parent_id', 'id', )
-    fields = ('name', 'parent_name', )
+                    'parent_id', 'num_of_subcategory', 'total_value',)
+    ordering = ('parent_id', 'id',)
+    fields = ('name', 'parent_name',)
 
     def save_model(self, request, obj, form, change):
         obj.parent_id = form.cleaned_data['parent_name']
@@ -253,6 +260,7 @@ class CargoAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы поставок
     """
+
     class StockInline(admin.StackedInline):
         model = CargoStock
         form = StockFormM2M
@@ -264,15 +272,15 @@ class CargoAdmin(admin.ModelAdmin):
 
     form = CargoForm
     # поля для отображения в списке поставок
-    list_display = ('supplier', 'date', 'status', )
+    list_display = ('supplier', 'date', 'status',)
     # поля для фильтрации
-    list_filter = ('date', 'supplier', 'status', )
+    list_filter = ('date', 'supplier', 'status',)
     # поля для текстового поиска
     search_fields = ['supplier__organization', ]
     fieldsets = ((_('ИНФОРМАЦИЯ О ПОСТАВКЕ'),
                   {'fields': ('cargo_id', 'cargo_supplier',
                               'cargo_status', 'cargo_date',
-                              'number', 'total')}), )
+                              'number', 'total')}),)
     inlines = [StockInline, ]
 
     def has_add_permission(self, request):
@@ -303,6 +311,7 @@ class SupplierAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы поставщиков
     """
+
     class CargoInline(admin.StackedInline):
         model = Cargo
         form = CargoForm
@@ -313,17 +322,17 @@ class SupplierAdmin(admin.ModelAdmin):
 
     form = SupplierForm
     inlines = [CargoInline, ]
-    list_display = ('organization', 'email', 'phone_number', 'address', )
+    list_display = ('organization', 'email', 'phone_number', 'address',)
     fieldsets = ((_('ЮРИДИЧЕСКОЕ ЛИЦО'), {'fields':
-                                          ('organization',
-                                           'address',
-                                           'legal_details', )}),
+                                              ('organization',
+                                               'address',
+                                               'legal_details',)}),
                  (_('КОНТАКТНЫЕ ДАННЫЕ'), {'fields':
-                                           ('contact_info',
-                                            'phone_number',
-                                            'email', )}),
+                                               ('contact_info',
+                                                'phone_number',
+                                                'email',)}),
                  (_('КАТЕГОРИИ ТОВАРОВ'), {'fields':
-                                           ('supplier_categories', )}))
+                                               ('supplier_categories',)}))
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -342,6 +351,7 @@ class CustomerAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы покупателей
     """
+
     # объект для отображения заказов выбранного покупателя
     class ShipmentInline(admin.StackedInline):
         form = ShipmentForm
@@ -354,7 +364,7 @@ class CustomerAdmin(admin.ModelAdmin):
         show_change_link = True
 
     form = CustomerForm
-    list_display = ('full_name', 'email', 'phone_number', )
+    list_display = ('full_name', 'email', 'phone_number',)
 
     inlines = [ShipmentInline, ]
 
@@ -370,6 +380,7 @@ class ShipmentAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы заказов
     """
+
     class StockInline(admin.StackedInline):
         model = ShipmentStock
         form = StockFormM2M
@@ -383,17 +394,17 @@ class ShipmentAdmin(admin.ModelAdmin):
     # поля для отображения в списке погрузок
     shipment_total = get_shipment_total
     shipment_total.short_description = _('Сумма покупки')
-    list_display = ('customer', 'date', 'status', shipment_total, 'qr', )
+    list_display = ('customer', 'date', 'status', shipment_total, 'qr',)
     # поля для фильтрации
-    list_filter = ('date', 'customer', 'status', )
+    list_filter = ('date', 'customer', 'status',)
     # поля для текстового поиска
-    search_fields = ('status', 'customer__full_name', )
+    search_fields = ('status', 'customer__full_name',)
     fieldsets = ((_('ИНФОРМАЦИЯ О ПОКУПКЕ'),
                   {'fields': ('shipment_id', 'customer_name',
                               'number_of_items', 'total',
                               'shipment_status', 'shipment_date',
-                              'shipment_qr', )}), )
-    inlines = (StockInline, )
+                              'shipment_qr',)}),)
+    inlines = (StockInline,)
 
     def is_shipment_available(self, obj):
         return all(s.stock.number > s.number
@@ -470,18 +481,82 @@ class ShipmentAdmin(admin.ModelAdmin):
         message.send()
 
 
-admin.site.register(CategoryMPTT, MPTTModelAdmin)
+# admin.site.register(CategoryMPTT, MPTTModelAdmin)
 
 @admin.register(StockMPTT)
 class StockMPTTAdmin(admin.ModelAdmin):
     """
     Отображение списка и формы товаров
     """
-    list_display = ('article', 'name', 'price', 'number', 'category', )
-    list_display_links = ('name', )
+    list_display = ('article', 'name', 'price', 'number', 'category',)
+    list_display_links = ('name',)
     # list_filter = (StockPriceFilter, StockCategoryFilter, StockEmptyFilter)
-    search_fields = ('article', 'name', )
-    ordering = ('category', 'name', )
+    search_fields = ('article', 'name',)
+    ordering = ('category', 'name',)
     list_per_page = 25
     verbose_name = _('Товар')
     verbose_name_plural = _('Товары')
+
+
+@admin.register(CategoryMPTT)
+class CategoryMPTTAdmin(MPTTModelAdmin):
+    """
+    Отображение списка и формы категорий
+    """
+    # form = CategoryForm
+    list_display = ('id', 'name', 'upper_categories', 'lower_categories',
+                    'parent_id', 'num_of_subcategory', 'total_value',)
+    # ordering = ('parent_id', 'id',)
+
+    # fields = ('name', 'parent_name', )
+
+    # def save_model(self, request, obj, form, change):
+    #     obj.parent_id = form.cleaned_data['parent_name']
+    #     super().save_model(request, obj, form, change)
+
+    # def parent_name(self, obj):
+    #         if not obj.parent_id:
+    #             return _('Нет базовой категории')
+    #         else:
+    #             return Category.objects.get(pk=obj.parent_id).name
+
+    def upper_categories(self, obj):
+        # next_id = obj.parent_id
+        # result = ''  # str(obj.name)
+        # while next_id != 0:
+        #     next_id = CategoryMPTT.objects.get(id=next_id)
+        #     result += '<-' + str(next_id)
+        #     next_id = next_id.parent_id
+        # return result
+        ancestors = obj.get_ancestors(ascending=True).values_list('name', flat=True)
+        result = '<-'.join(ancestors)
+        return result
+
+    def lower_categories(self, obj):
+        # obj_id = obj.id
+        # total = ''
+        # results = CategoryMPTT.objects.filter(parent_id=obj_id)
+        # for result in results:
+        #     total += str(result) + ', '
+        # return total
+        childs = obj.get_children().values_list('name', flat=True)
+        result = ', '.join(childs)
+        return result
+
+    def num_of_subcategory(self, obj):
+        # id = obj.id
+        # result = CategoryMPTT.objects.filter(parent_id=id).count()
+        # return result
+        return obj.get_children().count()
+
+    def total_value(self, obj):
+        # obj_id = obj.pk
+        # return subtotal_value(obj_id)
+        return subtotal_value(obj)
+
+    # num_of_subcategory.allow_tags = True
+    num_of_subcategory.short_description = _('Количество подкатегорий')
+    # parent_name.short_description = _('Базовая категория')
+    upper_categories.short_description = _('Надкатегории')
+    lower_categories.short_description = _('Подкатегории')
+    total_value.short_description = _('Общая стоимость')
