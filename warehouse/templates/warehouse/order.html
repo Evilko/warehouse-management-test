@@ -35,6 +35,7 @@
             <h2> {% trans "Выберите товары" %}</h2>
             {% for form in item_formset %}
                 <div class="form-row order-formset">
+                    {{ form.category }}
                     {{ form.item }}
                     {{ form.count }}
                 </div>
@@ -48,7 +49,7 @@
     </form>
 </div>
 
-<script src="{% static 'warehouse/js/jquery-1.3.2.min.js' %}"></script>
+<script src="{% static 'warehouse/js/jquery-3.4.1.min.js' %}"></script>
 <script src="{% static 'warehouse/js/jquery.formset.js' %}"></script>
 <script src="{% static 'warehouse/js/order-formset.js' %}"></script>
 {% endblock %}

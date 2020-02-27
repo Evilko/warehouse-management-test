@@ -68,6 +68,15 @@ class StockMPTTForm(forms.Form):
     item = forms.ModelChoiceField(queryset=StockMPTT.objects.all())
 
 
+class OrderItemMPTTForm(forms.Form):
+    category = TreeNodeChoiceField(queryset=CategoryMPTT.objects.all(),
+                                   level_indicator=u'+--', required=False)
+    category.widget = forms.Select(attrs={'class': "category"})
+    item = forms.ModelChoiceField(queryset=StockMPTT.objects.all())
+    item.widget = forms.Select(attrs={'required': True})
+    count = forms.DecimalField(required=True, initial=1, min_value=1)
+
+
 class CargoNewForm(forms.ModelForm):
     """
     Форма для выбора поставщика

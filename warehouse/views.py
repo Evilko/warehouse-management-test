@@ -9,15 +9,17 @@ from django.core.mail import EmailMessage
 from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from django.http import HttpResponse
-from django.views.generic.detail import BaseDetailView, SingleObjectTemplateResponseMixin
+from django.http import HttpResponse, JsonResponse
+from django.views.generic.detail import BaseDetailView, SingleObjectTemplateResponseMixin, SingleObjectMixin
+from django.core import serializers
 
 import json
 
 from .models import Stock, CargoStock, StockMPTT
 from .models import CargoDetails, ShipmentStock
 from .models import Cargo, Shipment
-from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm, CategoryMPTTForm, StockMPTTForm
+from .forms import CustomerForm, OrderItemForm, OrderCustomerSelectForm, CategoryMPTTForm, StockMPTTForm, \
+    OrderItemMPTTForm
 from .forms import CargoNewForm, CargoFillForm, StockForm, ShipmentConfirmationForm
 from .models import Customer, Stock, CargoStock
 from .models import Cargo, Shipment, ShipmentStock, CargoDetails
@@ -27,35 +29,35 @@ from .models import Cargo, Shipment, ShipmentStock, CategoryMPTT
 from .forms import CargoNewForm, CargoFillForm, StockForm, OrderItemForm, OrderCustomerSelectForm
 
 
-class JSONResponseMixin(object):
-    def render_to_response(self, context):
-        print('get_json_response')
-        obj = self.get_json_response(self.convert_context_to_json(context))
-        print(obj)
-        return obj
-    def get_json_response(self, content, **httpresponse_kwargs):
-        print('HttpResponse')
-        obj = HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
-        print(obj)
-        return obj
-    def convert_context_to_json(self, context):
-        print('json.dumps(context)')
-        obj = json.dumps(context)
-        print(obj)
-        return obj
-
-class HybridDetailView(JSONResponseMixin, SingleObjectTemplateResponseMixin, BaseDetailView):
-    def render_to_response(self, context):
-        if self.request.is_ajax():
-            obj = context['object'].as_dict()
-            print('render_to_response if self.request.is_ajax():')
-            print(self.request.is_ajax())
-            print(obj)
-            return JSONResponseMixin.render_to_response(self, obj)
-        else:
-            print('render_to_response if else')
-            print(context)
-            return SingleObjectTemplateResponseMixin.render_to_response(self, context)
+# class JSONResponseMixin(object):
+#     def render_to_response(self, context):
+#         print('get_json_response')
+#         obj = self.get_json_response(self.convert_context_to_json(context))
+#         print(obj)
+#         return obj
+#     def get_json_response(self, content, **httpresponse_kwargs):
+#         print('HttpResponse')
+#         obj = HttpResponse(content, content_type='application/json', **httpresponse_kwargs)
+#         print(obj)
+#         return obj
+#     def convert_context_to_json(self, context):
+#         print('json.dumps(context)')
+#         obj = json.dumps(context)
+#         print(obj)
+#         return obj
+#
+# class HybridDetailView(JSONResponseMixin, SingleObjectTemplateResponseMixin, BaseDetailView):
+#     def render_to_response(self, context):
+#         if self.request.is_ajax():
+#             obj = context['object'].as_dict()
+#             print('render_to_response if self.request.is_ajax():')
+#             print(self.request.is_ajax())
+#             print(obj)
+#             return JSONResponseMixin.render_to_response(self, obj)
+#         else:
+#             print('render_to_response if else')
+#             print(context)
+#             return SingleObjectTemplateResponseMixin.render_to_response(self, context)
 
 
 class MpttView(View):
@@ -141,7 +143,7 @@ class OrderView(View):
     """
     Class-based view для обработки страницы покупки
     """
-    OrderItemFormSet = formset_factory(OrderItemForm, min_num=1, extra=0)
+    OrderItemFormSet = formset_factory(OrderItemMPTTForm, min_num=1, extra=0)
 
     def post(self, request):
         customer_form = CustomerForm(request.POST)
@@ -157,7 +159,7 @@ class OrderView(View):
             if customer_form.is_valid():
                 customer = customer_form.save()
 
-        sh = Shipment.objects.create(customer=customer)
+        # sh = Shipment.objects.create(customer=customer)
 
         if item_formset.is_valid():
             stocks = dict()
@@ -165,12 +167,24 @@ class OrderView(View):
                 name = form.cleaned_data['item']
                 stocks[name] = stocks.get(name, 0) + form.cleaned_data.get('count')
             for stock, count in stocks.items():
-                ShipmentStock.objects.create(shipment=sh, stock=stock, number=count)
+                # ShipmentStock.objects.create(shipment=sh, stock=stock, number=count)
+                print(f'Stock: {stock}. Count: {count}.')
 
         messages.info(request, _('Заявка отправлена'))
         return redirect('warehouse:order_successful')
 
     def get(self, request):
+        if self.request.is_ajax():
+            cat = request.GET['category']
+            if cat:
+                category = CategoryMPTT.objects.get(pk=cat).get_descendants(include_self=True)
+                stock = StockMPTT.objects.filter(category__in=category)
+                stock_dict = {k: v for k, v in stock.values_list('pk', 'name')}
+                content = json.dumps(stock_dict)
+                # content = serializers.serialize('json', stock)
+                # print(content)
+            # return HttpResponse(content, content_type='application/json')
+            return JsonResponse(stock_dict)
         customer_form = CustomerForm()
         item_formset = self.OrderItemFormSet()
         customer_selectform = OrderCustomerSelectForm()
@@ -186,9 +200,15 @@ class OrderSuccessfulView(View):
     """
     Class-based view для обработки перенаправления после покупки
     """
-
     def get(self, request):
         return render(request, 'warehouse/order_successful.html')
+
+
+# class GetStockAJAXView(JSONResponseMixin, SingleObjectMixin):
+#
+#     def get(self, request):
+#         if self.request.is_ajax:
+#             pass
 
 
 def cargo_new(request):
